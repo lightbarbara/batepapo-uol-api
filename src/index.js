@@ -3,6 +3,7 @@ import cors from 'cors'
 import { MongoClient, ObjectId } from 'mongodb'
 import dotenv from 'dotenv'
 import joi from 'joi'
+import dayjs from 'dayjs'
 
 const participantSchema = joi.object({
     name: joi.string().required().max(30)
@@ -40,13 +41,28 @@ app.post('/participants', async (req, res) => {
 
         if (validation.error) {
             const errors = validation.error.details.map(detail => detail.message)
-            res.status().send(errors)
+            res.status(422).send(errors)
+            return
+        }
+
+        const participant = await db.collection('participants').findOne({'name': name})
+
+        if (participant) {
+            res.status(409).send({message: 'User already exists.'})
             return
         }
 
         await db.collection('participants').insert({
             'name': name,
             'lastStatus': Date.now()
+        })
+
+        await db.collection('messages').insert({
+            'from': name,
+            'to': 'Todos',
+            'text': 'entra na sala...',
+            'type': 'status',
+            'time': dayjs().format('HH:mm:ss')
         })
 
         res.status(201).send({message: 'User created!'})
@@ -134,6 +150,8 @@ app.put('/messages/:messageId', async (req, res) => {
     try {
 
         const { messageId } = req.params
+
+
 
     } catch (err) {
         console.log(err)
