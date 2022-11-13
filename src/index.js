@@ -189,14 +189,54 @@ app.put('/messages/:messageId', async (req, res) => {
 
     try {
 
+        const { to, text, type } = req.body
+
         const { messageId } = req.params
 
+        const { user } = req.headers
 
+        const message = await db.collection('messages').findOne({ '_id': ObjectId(messageId) })
+
+        if (!message) {
+            res.status(404).send({ message: 'Message not found.' })
+            return
+        }
+
+        if (user !== message.from) {
+            res.status(401).send({ message: 'You are not allowed to edit this message.' })
+            return
+        }
+
+        const participant = await db.collection('participants').findOne({ 'name': user })
+
+        if (!participant) {
+            res.status(422).send({ message: 'User not a participant.' })
+            return
+        }
+
+        const validation = messageSchema.validate({ to, text, type }, { abortEarly: false })
+
+        if (validation.error) {
+            const errors = validation.error.details.map(detail => detail.message)
+            res.status(422).send(errors)
+            return
+        }
+
+        await db.collection('messages').updateOne({ '_id': ObjectId(messageId) }, {
+            $set: {
+                'from': user,
+                'to': to,
+                'text': text,
+                'type': type
+            }
+        })
 
     } catch (err) {
         console.log(err)
         res.status(500).send({ message: err.message })
     }
+
+    res.status(201).send({ message: 'Message updated.' })
 
 })
 
