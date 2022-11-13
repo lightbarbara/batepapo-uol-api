@@ -138,7 +138,7 @@ app.get('/messages', async (req, res) => {
 
         const { user } = req.headers
 
-        let messages = await db.collection('messages').find({ $or: [{ type: 'message' }, { from: user }, { to: user }] }).toArray()
+        let messages = await db.collection('messages').find({ $or: [{ type: 'message' }, { from: user }, { to: user }, { to: 'Todos' }] }).toArray()
         messages = messages.reverse()
 
         if (limit) {
@@ -164,14 +164,15 @@ app.delete('/messages/:messageId', async (req, res) => {
 
         const message = await db.collection('messages').findOne({ _id: ObjectId(messageId) })
 
-        // if (!message) {
-        //     res.status(404).send({message: 'No message with this id!'})
-        //     return
-        // }
+        if (!message) {
+            res.status(404).send({ message: 'No message with this id!' })
+            return
+        }
 
-        // if (message.name !== user) {
-        //     res.status(401).send({message: 'You are not allowed to delete this message!'})
-        // }
+        if (message.from !== user) {
+            res.status(401).send({ message: 'You are not allowed to delete this message!' })
+            return
+        }
 
         await db.collection('messages').deleteOne({ _id: ObjectId(messageId) })
 
@@ -202,6 +203,24 @@ app.put('/messages/:messageId', async (req, res) => {
 app.post('/status', async (req, res) => {
 
     try {
+
+        const { user } = req.headers
+
+        const participant = await db.collection('participants').findOne({ name: user })
+
+        if (!participant) {
+            res.status(404).send({ message: 'User not a participant.' })
+            return
+        }
+
+        await db.collection('participants').updateOne({ name: user }, {
+            $set: {
+                'name': user,
+                'lastStatus': Date.now()
+            }
+        })
+
+        res.status(200).send('Status updated.')
 
     } catch (err) {
         console.log(err)
