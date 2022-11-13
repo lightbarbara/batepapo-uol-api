@@ -12,7 +12,7 @@ const participantSchema = joi.object({
 const messageSchema = joi.object({
     to: joi.string().required().max(30),
     text: joi.string().required().max(100),
-    type: joi.string().required().max(30)
+    type: joi.string().required().valid('message', 'private_message')
 })
 
 const app = express()
@@ -37,7 +37,7 @@ app.post('/participants', async (req, res) => {
 
         const { name } = req.body
 
-        const validation = participantSchema.validate(req.body, {abortEarly: false})
+        const validation = participantSchema.validate(req.body, { abortEarly: false })
 
         if (validation.error) {
             const errors = validation.error.details.map(detail => detail.message)
@@ -45,10 +45,10 @@ app.post('/participants', async (req, res) => {
             return
         }
 
-        const participant = await db.collection('participants').findOne({'name': name})
+        const participant = await db.collection('participants').findOne({ 'name': name })
 
         if (participant) {
-            res.status(409).send({message: 'User already exists.'})
+            res.status(409).send({ message: 'User already exists.' })
             return
         }
 
@@ -65,11 +65,11 @@ app.post('/participants', async (req, res) => {
             'time': dayjs().format('HH:mm:ss')
         })
 
-        res.status(201).send({message: 'User created!'})
+        res.status(201).send({ message: 'User created!' })
 
     } catch (err) {
         console.log(err)
-        res.status(500).send({message: err.message})
+        res.status(500).send({ message: err.message })
     }
 
 })
@@ -83,7 +83,7 @@ app.get('/participants', async (req, res) => {
 
     } catch (err) {
         console.log(err)
-        res.status(500).send({message: err.message})
+        res.status(500).send({ message: err.message })
     }
 
 })
@@ -92,10 +92,39 @@ app.post('/messages', async (req, res) => {
 
     try {
 
+        const {to, text, type} = req.body
+
+        const { user } = req.headers
+
+        const participant = await db.collection('participants').findOne({ 'name': user })
+
+        if (!participant) {
+            res.status(422).send({ message: 'User not a participant.' })
+            return
+        }
+
+        const validation = messageSchema.validate({to, text, type}, { abortEarly: false })
+
+        if (validation.error) {
+            const errors = validation.error.details.map(detail => detail.message)
+            res.status(422).send(errors)
+            return
+        }
+
+        await db.collection('messages').insert({
+            'from': user,
+            'to': to,
+            'text': text,
+            'type': type,
+            'time': dayjs().format('HH:mm:ss')
+        })
+
     } catch (err) {
         console.log(err)
-        res.status(500).send({message: err.message})
+        res.status(500).send({ message: err.message })
     }
+
+    res.status(201).send({message: 'Message sent.'})
 
 })
 
@@ -111,7 +140,7 @@ app.get('/messages', async (req, res) => {
 
     } catch (err) {
         console.log(err)
-        res.status(500).send({message: err.message})
+        res.status(500).send({ message: err.message })
     }
 
 })
@@ -136,11 +165,11 @@ app.delete('/messages/:messageId', async (req, res) => {
 
         await db.collection('messages').deleteOne({ _id: ObjectId(messageId) })
 
-        res.status(200).send({message: 'Message deleted!'})
+        res.status(200).send({ message: 'Message deleted!' })
 
     } catch (err) {
         console.log(err)
-        res.status(500).send({message: err.message})
+        res.status(500).send({ message: err.message })
     }
 
 })
@@ -155,7 +184,7 @@ app.put('/messages/:messageId', async (req, res) => {
 
     } catch (err) {
         console.log(err)
-        res.status(500).send({message: err.message})
+        res.status(500).send({ message: err.message })
     }
 
 })
@@ -166,7 +195,7 @@ app.post('/status', async (req, res) => {
 
     } catch (err) {
         console.log(err)
-        res.status(500).send({message: err.message})
+        res.status(500).send({ message: err.message })
     }
 
 })
