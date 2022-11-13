@@ -92,7 +92,7 @@ app.post('/messages', async (req, res) => {
 
     try {
 
-        const {to, text, type} = req.body
+        const { to, text, type } = req.body
 
         const { user } = req.headers
 
@@ -103,7 +103,7 @@ app.post('/messages', async (req, res) => {
             return
         }
 
-        const validation = messageSchema.validate({to, text, type}, { abortEarly: false })
+        const validation = messageSchema.validate({ to, text, type }, { abortEarly: false })
 
         if (validation.error) {
             const errors = validation.error.details.map(detail => detail.message)
@@ -124,7 +124,7 @@ app.post('/messages', async (req, res) => {
         res.status(500).send({ message: err.message })
     }
 
-    res.status(201).send({message: 'Message sent.'})
+    res.status(201).send({ message: 'Message sent.' })
 
 })
 
@@ -132,9 +132,19 @@ app.get('/messages', async (req, res) => {
 
     try {
 
-        const { limit } = Number(req.query)
+        let { limit } = req.query
 
-        const messages = await db.collection('messages').find().toArray()
+        limit = Number(limit)
+
+        const { user } = req.headers
+
+        let messages = await db.collection('messages').find({ $or: [{ type: 'message' }, { from: user }, { to: user }] }).toArray()
+        messages = messages.reverse()
+
+        if (limit) {
+            messages = await db.collection('messages').find().toArray()
+            messages = messages.slice(-limit).reverse()
+        }
 
         res.status(200).send(messages)
 
