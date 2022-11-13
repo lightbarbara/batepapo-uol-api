@@ -1,58 +1,75 @@
 import express from 'express'
 import cors from 'cors'
 import { MongoClient } from 'mongodb'
+import dotenv from 'dotenv'
 
 const app = express()
 app.use(cors())
 app.use(express.json())
-const mongoClient = new MongoClient('mongodb://localhost:27017')
+dotenv.config()
+const mongoClient = new MongoClient(process.env.MONGO_URI)
 let db
 
-mongoClient.connect()
-    .then(() => {
-        db = mongoClient.db('bate-papo-uol')
-    })
-    .catch(err => console.log(err))
+try {
+    await mongoClient.connect()
+    db = mongoClient.db('bate-papo-uol')
+    
+} catch (err) {
+    console.log(err)
+}
 
-app.post('/participants', (req, res) => {
+app.post('/participants', async (req, res) => {
 
-    const { name } = req.body
+    try {
+        const { name } = req.body
 
-    db.collection('participants').insert({
-        'name': name,
-        'lastStatus': Date.now()
-    })
-        .then(response => {
-            res.status(201).send('User created!')
+        await db.collection('participants').insert({
+            'name': name,
+            'lastStatus': Date.now()
         })
-        .catch(err => {
-            res.status().send()
-        })
+
+        res.status(201).send('User created!')
+
+    } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+    }
+})
+
+app.get('/participants', async (req, res) => {
+
+    try {
+        const participants = await db.collection('participants').find().toArray()
+
+        res.status(200).send(participants)
+
+    } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+    }
+})
+
+app.post('/messages', async (req, res) => {
+    
+})
+
+app.get('/messages', async (req, res) => {
+
+    try {
+        const { limit } = Number(req.query)
+
+        const messages = await db.collection('messages').find().toArray()
+
+        res.status(200).send(messages)
+
+    } catch (err) {
+        console.log(err)
+        res.sendStatus(500)
+    }
 
 })
 
-app.get('/participants', (req, res) => {
-
-    db.collection('participants')
-        .find()
-        .toArray()
-        .then(participants => {
-            res.send(participants)
-        })
-        .catch(err => {
-            res.sendStatus(500)
-        })
-})
-
-app.post('/messages', (req, res) => {
-
-})
-
-app.get('/messages', (req, res) => {
-
-})
-
-app.post('/status', (req, res) => {
+app.post('/status', async (req, res) => {
 
 })
 
