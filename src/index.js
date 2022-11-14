@@ -65,7 +65,7 @@ app.post('/participants', async (req, res) => {
     try {
 
         let { name } = req.body
-        name = stripHtml(name).result.trim()
+        name = stripHtml(name).result.trim().toLowerCase()
 
         const validation = participantSchema.validate(req.body, { abortEarly: false })
 
@@ -123,12 +123,12 @@ app.post('/messages', async (req, res) => {
     try {
 
         let { to, text, type } = req.body
-        to = stripHtml(to).result.trim()
-        text = stripHtml(text).result.trim()
-        type = stripHtml(type).result.trim()
+        to = stripHtml(to).result.trim().toLowerCase()
+        text = stripHtml(text).result.trim().toLowerCase()
+        type = stripHtml(type).result.trim().toLowerCase()
 
         let { user } = req.headers
-        user = stripHtml(user).result.trim()
+        user = stripHtml(user).result.trim().toLowerCase()
 
         const participant = await db.collection('participants').findOne({ 'name': user })
 
@@ -169,7 +169,7 @@ app.get('/messages', async (req, res) => {
         let { limit } = req.query
 
         let { user } = req.headers
-        user = stripHtml(user).result.trim()
+        user = stripHtml(user).result.trim().toLowerCase()
 
         let messages = await db.collection('messages').find({ $or: [{ type: 'message' }, { from: user }, { to: user }, { to: 'Todos' }] }).toArray()
         messages = messages.reverse()
@@ -195,7 +195,7 @@ app.delete('/messages/:messageId', async (req, res) => {
     try {
 
         let user = req.headers.user
-        user = stripHtml(user).result.trim()
+        user = stripHtml(user).result.trim().toLowerCase()
 
         let { messageId } = req.params
         messageId = stripHtml(messageId).result.trim()
@@ -288,7 +288,7 @@ app.post('/status', async (req, res) => {
     try {
 
         let { user } = req.headers
-        user = stripHtml(user).result.trim()
+        user = stripHtml(user).result.trim().toLowerCase()
 
         const participant = await db.collection('participants').findOne({ name: user })
 
