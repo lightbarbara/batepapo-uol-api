@@ -31,6 +31,34 @@ try {
     console.log(err)
 }
 
+setInterval(async () => {
+
+    try {
+        const interval = new Date() - 1000
+        const participants = await db.collection('participants').find().toArray()
+        if (participants.length === 0) {
+            return
+        }
+        const removedParticipants = await db.collection('participants').find({ lastStatus: { $lte: interval } }).toArray()
+        await db.collection('participants').deleteMany({ lastStatus: { $lte: interval } })
+
+        if (removedParticipants) {
+            removedParticipants.map(r => {
+                db.collection('messages').insert({
+                    'from': r.name,
+                    'to': 'Todos',
+                    'text': 'sai da sala...',
+                    'type': 'status',
+                    'time': dayjs().format('HH:mm:ss')
+                })
+            })
+        }
+
+    } catch (err) {
+        console.log(err)
+    }
+}, 15000)
+
 app.post('/participants', async (req, res) => {
 
     try {
