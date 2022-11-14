@@ -4,6 +4,7 @@ import { MongoClient, ObjectId } from 'mongodb'
 import dotenv from 'dotenv'
 import joi from 'joi'
 import dayjs from 'dayjs'
+import { stripHtml } from 'string-strip-html'
 
 const participantSchema = joi.object({
     name: joi.string().required().max(30)
@@ -63,7 +64,8 @@ app.post('/participants', async (req, res) => {
 
     try {
 
-        const { name } = req.body
+        let { name } = req.body
+        name = stripHtml(name).result.trim()
 
         const validation = participantSchema.validate(req.body, { abortEarly: false })
 
@@ -120,9 +122,13 @@ app.post('/messages', async (req, res) => {
 
     try {
 
-        const { to, text, type } = req.body
+        let { to, text, type } = req.body
+        to = stripHtml(to).result.trim()
+        text = stripHtml(text).result.trim()
+        type = stripHtml(type).result.trim()
 
-        const { user } = req.headers
+        let { user } = req.headers
+        user = stripHtml(user).result.trim()
 
         const participant = await db.collection('participants').findOne({ 'name': user })
 
@@ -162,14 +168,15 @@ app.get('/messages', async (req, res) => {
 
         let { limit } = req.query
 
-        limit = Number(limit)
-
-        const { user } = req.headers
+        let { user } = req.headers
+        user = stripHtml(user).result.trim()
 
         let messages = await db.collection('messages').find({ $or: [{ type: 'message' }, { from: user }, { to: user }, { to: 'Todos' }] }).toArray()
         messages = messages.reverse()
 
         if (limit) {
+            limit = stripHtml(limit).result.trim()
+            limit = Number(limit)
             messages = await db.collection('messages').find().toArray()
             messages = messages.slice(-limit).reverse()
         }
@@ -187,8 +194,11 @@ app.delete('/messages/:messageId', async (req, res) => {
 
     try {
 
-        const user = req.headers.user
-        const { messageId } = req.params
+        let user = req.headers.user
+        user = stripHtml(user).result.trim()
+
+        let { messageId } = req.params
+        messageId = stripHtml(messageId).result.trim()
 
         const message = await db.collection('messages').findOne({ _id: ObjectId(messageId) })
 
@@ -217,11 +227,16 @@ app.put('/messages/:messageId', async (req, res) => {
 
     try {
 
-        const { to, text, type } = req.body
+        let { to, text, type } = req.body
+        to = stripHtml(to).result.trim()
+        text = stripHtml(text).result.trim()
+        type = stripHtml(type).result.trim()
 
-        const { messageId } = req.params
+        let { messageId } = req.params
+        messageId = stripHtml(messageId).result.trim()
 
-        const { user } = req.headers
+        let { user } = req.headers
+        user = stripHtml(user).result.trim()
 
         const message = await db.collection('messages').findOne({ '_id': ObjectId(messageId) })
 
@@ -272,7 +287,8 @@ app.post('/status', async (req, res) => {
 
     try {
 
-        const { user } = req.headers
+        let { user } = req.headers
+        user = stripHtml(user).result.trim()
 
         const participant = await db.collection('participants').findOne({ name: user })
 
