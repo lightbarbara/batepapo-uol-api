@@ -304,7 +304,7 @@ app.post('/status', async (req, res) => {
             }
         })
 
-        res.status(200).send('Status updated.')
+        res.status(200).send({ message: 'Status updated.' })
 
     } catch (err) {
         console.log(err)
